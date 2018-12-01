@@ -10,7 +10,16 @@ defmodule ScholarlyTest do
         |> Scholarly.ResearchInfoSystems.parse()
 
       refute nil == record
-      assert %Scholarly.Record{} = record
+      assert record.standard_number == "1758-6798"
+    end
+
+    test "can handle files with \\n line endings" do
+      {:ok, [%Scholarly.Record{} = record]} =
+        ["TY  - JOUR", "SN  - 1758-6798", "ER  - "]
+        |> Enum.join("\n")
+        |> Scholarly.ResearchInfoSystems.parse()
+
+      refute nil == record
       assert record.standard_number == "1758-6798"
     end
 

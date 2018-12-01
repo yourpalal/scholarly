@@ -1,10 +1,11 @@
 defmodule Scholarly.ResearchInfoSystems do
   # https://en.wikipedia.org/wiki/RIS_(file_format)
 
+  @split_pattern ~r/(?<linebreak>\r?\n)[A-Z][A-Z]  -/sm
+  @field_pattern ~r/\A(?<key>[A-Z][A-Z])  - (?<value>.*)/sm
+
   def parse(input) when is_binary(input) do
-    records =
-      input
-      |> String.splitter("\r\n")
+    records = Regex.split(@split_pattern, input, on: [:linebreak])
       |> Enum.map(&split_field/1)
       |> split_records()
       |> Enum.map(&rows_to_record/1)
