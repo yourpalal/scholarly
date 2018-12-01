@@ -13,9 +13,9 @@ defmodule Scholarly.ResearchInfoSystems do
     {:ok, records}
   end
 
-  @field_pattern ~r/\A(?<key>[A-Z][A-Z])  - (?<value>.*)/sm
-
-  def split_records(rows) do
+  defp split_records(rows) do
+    # chunk until an ER row, then reverse the order of the rows to get
+    # them back into file order
     chunker = fn row, acc ->
       case row do
         {"ER", _} -> {:cont, Enum.reverse(acc), []}
@@ -23,32 +23,62 @@ defmodule Scholarly.ResearchInfoSystems do
       end
     end
 
-    finisher = fn
-      [] -> {:cont, []}
-      acc -> {:cont, []}
-    end
+    finisher = fn _ -> {:cont, []} end
 
     Enum.chunk_while(rows, [], chunker, finisher)
   end
 
-  def rows_to_record(rows) do
+  defp rows_to_record(rows) do
     Enum.reduce(rows, %Scholarly.Record{}, &add_field/2)
   end
 
-  def split_field(input) do
+  defp split_field(input) do
     %{"key" => key, "value" => value} = Regex.named_captures(@field_pattern, input)
     {key, value}
   end
 
-  def add_field({"TY", value}, record) do
+  defp add_field({"TY", value}, record) do
     %{record | type: value}
   end
 
-  def add_field({"AU", value}, record) do
+  defp add_field({"TI", value}, record) do
+    %{record | title: value}
+  end
+
+  defp add_field({"AB", value}, record) do
+    %{record | abstract: value}
+  end
+
+  defp add_field({"JO", value}, record) do
+    %{record | journal: value}
+  end
+
+  defp add_field({"ID", value}, record) do
+    %{record | journal_assigned_id: value}
+  end
+
+  defp add_field({"AU", value}, record) do
     %{record | authors: record.authors ++ [value]}
   end
 
-  def add_field({"SN", value}, record) do
+  defp add_field({"PY", value}, record) do
+    %{record | published_year: value}
+  end
+
+  defp add_field({"DA", value}, record) do
+    [y, m, d] = String.split(value, "/")
+    %{record | published_year: y, published_month: m, published_day: d}
+  end
+
+  defp add_field({"SN", value}, record) do
     %{record | standard_number: value}
+  end
+
+  defp add_field({"UR", value}, record) do
+    %{record | url: value}
+  end
+
+  defp add_field({"DO", value}, record) do
+    %{record | doi: value}
   end
 end
